@@ -1,83 +1,80 @@
-# AI Agent Context Guide for Lighthouse Project
+# Lighthouse - AI Agent Guidelines
 
-This document serves as a context guide for AI agents working on the **Lighthouse** project. It outlines the project structure, technology stack, coding conventions, and current implementation status to ensure consistency across sessions.
+This document defines the **Rules**, **Workflow**, and **Skills** required for AI agents working on the Lighthouse project. Adhering to these guidelines ensures consistency, quality, and context preservation across different sessions.
 
-## 1. Project Overview
-**Lighthouse** is an on-premise, agentless support system for securities firms. It includes a Dashboard, Real-time Chat, Remote Support, and Ticket Management.
+---
 
-- **Type**: Monorepo (Frontend + Backend)
-- **Target Audience**: Internal users (Traders, Staff)
-- **Environment**: Closed network (Intranet), Offline deployment capable.
+## 1. Rules (원칙 및 제약사항)
 
-## 2. Technology Stack
+### 1.1 Language & Localization
+- **UI Language**: **Korean (한국어)** is mandatory for all user-facing text.
+  - *Exception*: The application name "Lighthouse" must remain in English.
+- **Code Language**: All variable names, comments, and commit messages must be in **English**.
+- **Translations**: Do not rely on auto-translation for financial terms; use context-appropriate terminology (e.g., "문의" for Ticket, "체결" for Execution).
 
-### Frontend (`/frontend`)
-- **Framework**: Next.js 14+ (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-  - **Important**: Use `bg-white` for main backgrounds. Avoid `bg-gray-50` unless necessary for separation.
-- **State Management**: Zustand
-- **Icons**: Lucide React
-- **Real-time**: Socket.io Client
+### 1.2 Design & Styling
+- **Backgrounds**: Always use **`bg-white`** for main containers to ensure a clean, premium look. Avoid `bg-gray-50` unless strictly necessary for section separation.
+- **Framework**: Use **Tailwind CSS** strictly. Do not introduce new CSS files or styled-components.
+- **Icons**: Use `lucide-react` for all iconography.
 
-### Backend (`/backend`)
-- **Framework**: NestJS
-- **Language**: TypeScript
-- **Database**: 
-  - **Dev/Current**: SQLite (TypeORM) -> *Fallback due to initial Docker issues.*
-  - **Prod Target**: PostgreSQL (TypeORM)
-- **Real-time**: Socket.io Gateway (Port 4000)
+### 1.3 Architecture & Monorepo
+- **Structure**: Respect the folder structure (`frontend/`, `backend/`). Do not move core configuration files.
+- **State Management**: Use **Zustand** for global client state.
+- **Network**: The application runs in a **closed intranet**. Do not add dependencies that require external CDNs (e.g., Google Fonts via URL). Fonts must be self-hosted or standard system fonts.
 
-## 3. Architecture & Ports
-- **Frontend**: Runs on `http://localhost:3000` (or 3001 if busy)
-- **Backend API**: Runs on `http://localhost:4000`
-- **Communication**: Frontend proxies requests or calls Backend directly via CORS.
+### 1.4 Code Quality
+- **Type Safety**: strict TypeScript usage is required. Avoid `any` types.
+- **Input Handling**: For Chat inputs, always implement the **CJK Composition Fix** (`e.nativeEvent.isComposing`) to prevent double-typing issues.
 
-## 4. Coding Conventions & Rules
+---
 
-### Localization (Language)
-- **User Interface (UI)**: **Korean (한국어)** only.
-  - Exception: The app name "Lighthouse" is kept in English.
-- **Code (Variables, Comments, Commits)**: **English**.
+## 2. Workflow (작업 흐름)
 
-### Design Guidelines
-- **Aesthetics**: Clean, Professional, "Premium" feel.
-- **Colors**: Use White (`bg-white`) for page backgrounds to look clean. Use Blue/Indigo for primary actions.
-- **Components**: Reusable UI components are in `src/components/ui`.
+### 2.1 Initialization
+1. **Check Context**: Read `AI_GUIDE.md` and `task.md` to understand current progress.
+2. **Environment Check**: Verify Node.js version and ensure ports `3000` (Frontend) and `4000` (Backend) are free.
 
-### Specific Implementation Details
-- **Chat**:
-  - Located in `src/components/chat/ChatWindow.tsx`.
-  - **Fix**: Implemented `e.nativeEvent.isComposing` check to prevent CJK double-input bugs.
-- **Remote Support**:
-  - Located in `src/app/remote/page.tsx`.
-  - Uses WebRTC (Mock/Signaling implemented).
-- **Tickets**:
-  - List: `src/app/tickets/page.tsx`
-  - Detail: `src/app/tickets/[id]/page.tsx` (Dynamic Route)
-- **Knowledge Base**:
-  - Placeholder: `src/app/knowledge/page.tsx`
-  - Search: Implemented in `Header.tsx` (Client Component).
+### 2.2 Development Cycle
+1. **Plan**: Create or update `implementation_plan.md` for complex tasks.
+2. **Implement**: 
+   - Backend changes first (API/Socket).
+   - Frontend integration second.
+3. **Verify**:
+   - Run `npm run dev` in `frontend` and `npm run start:dev` in `backend`.
+   - Test UI interactions (click buttons, submit forms).
+4. **Document**: Update `task.md` and `walkthrough.md` with progress.
 
-## 5. Development Workflow
-1. **Running Locally**:
-   - Backend: `cd backend && npm run start:dev`
-   - Frontend: `cd frontend && npm run dev`
-2. **Git**:
-   - Commit messages should be in English.
-   - Push to `origin main`.
+### 2.3 Deployment & Version Control
+- **Commit**: Use imperative mood in English (e.g., "Add feature", "Fix bug").
+- **Push**: Always push to `origin main` after completing a significant unit of work.
 
-## 6. Current Status (As of Feb 2026)
-- [x] Basic UI/UX Implementation (Dashboard, Chat, Remote)
-- [x] Localization to Korean
-- [x] Database (SQLite) connection
-- [x] CJK Input Bug Fix
-- [x] Inquiry (Ticket) List & Detail View
-- [x] Knowledge Base Placeholder & Interpretation of Search
-- [ ] Real WebRTC ICE/TURN Server integration (Mocked)
-- [ ] Authentication (Mocked user: "Hong Gil-dong")
+---
 
-## 7. Future Tasks for AI
-- Reference this guide to understand the "White Background" rule and "Korean UI" requirement.
-- When implementing new features, maintain the Monorepo structure.
-- Always check `task.md` for the latest progress.
+## 3. Skills (필요 역량 및 스택)
+
+### 3.1 Frontend Engineering (Next.js)
+- **App Router Proficiency**: Knowledge of `page.tsx`, `layout.tsx`, and Client vs. Server Components.
+- **Tailwind Mastery**: Ability to implement complex, responsive layouts using utility classes.
+- **Real-time Integration**: Experience connecting `socket.io-client` with React hooks.
+
+### 3.2 Backend Engineering (NestJS)
+- **Modular Architecture**: Understanding of Modules, Controllers, and Gateways.
+- **WebSocket Gateway**: Ability to handle `SubscribeMessage` and emission events.
+- **TypeORM**: Knowledge of Entity definition and Repository patterns (supporting SQLite/PostgreSQL).
+
+### 3.3 Domain Knowledge (Securities/Support)
+- **Ticket Lifecycle**: New -> In Progress -> Resolved.
+- **Remote Support Flow**: WebRTC Signaling concepts (Offer/Answer/ICE).
+- **Intranet Constraints**: Awareness of offline/proxy limitations.
+
+---
+
+## 4. Current Configuration Reference
+
+| Component | Port | Local URL |
+|-----------|------|-----------|
+| Frontend  | 3000 | http://localhost:3000 |
+| Backend   | 4000 | http://localhost:4000 |
+| DB (Dev)  | N/A  | SQLite (File-based) |
+
+> **Note**: If Port 3000 is busy, Next.js will auto-switch to 3001. Always check terminal output.
