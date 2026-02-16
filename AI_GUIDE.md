@@ -77,4 +77,9 @@ This document defines the **Rules**, **Workflow**, and **Skills** required for A
 | Backend   | 4000 | http://localhost:4000 |
 | DB (Dev)  | N/A  | SQLite (File-based) |
 
+## 5. Current Status (Updated)
+- [x] Notifications & User Profile (Mock Data)
+- [x] Global Search (Knowledge Base)
+- [x] Ticket Management (List/Detail)
+
 > **Note**: If Port 3000 is busy, Next.js will auto-switch to 3001. Always check terminal output.
