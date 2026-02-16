@@ -1,0 +1,41 @@
+# Tasks
+
+- [x] Project Planning & Architecture Design <!-- id: 0 -->
+    - [x] Define Project Requirements & Architecture <!-- id: 1 -->
+    - [x] Create Implementation Plan <!-- id: 2 -->
+    - [x] Review with User <!-- id: 3 -->
+- [x] Environment Setup <!-- id: 4 -->
+- [/] Frontend Development <!-- id: 5 -->
+    - [x] Setup Next.js Project <!-- id: 6 -->
+    - [/] Implement UI Components (Chat, Dashboard) <!-- id: 7 -->
+        - [x] Dashboard Layout <!-- id: 7.1 -->
+        - [x] Chat Interface <!-- id: 7.2 -->
+    - [x] Implement Remote Support Interface <!-- id: 8 -->
+- [/] Backend Development <!-- id: 9 -->
+    - [x] Setup NestJS Server <!-- id: 10 -->
+    - [x] Implement WebSocket Gateway (Chat/Notifications) <!-- id: 11 -->
+    - [x] Implement Signaling Server (WebRTC) <!-- id: 12 -->
+    - [x] Database Schema Design <!-- id: 13 -->
+- [x] Security & Compliance <!-- id: 14 -->
+    - [x] Ensure No External CDN Dependencies <!-- id: 16 -->
+    - [x] Plan for Internal TURN Server (if needed) <!-- id: 17 -->
+- [x] Localization <!-- id: 20 -->
+    - [x] Translate UI to Korean <!-- id: 21 -->
+- [x] Bug Fixes <!-- id: 22 -->
+    - [x] Fix CJK Double Input Issue <!-- id: 23 -->
+    - [x] Fix CJK Double Input Issue <!-- id: 23 -->
+    - [x] Fix CJK Double Input Issue <!-- id: 23 -->
+    - [x] Fix CJK Double Input Issue <!-- id: 23 -->
+    - [x] Implement Knowledge Base Action (Placeholder) <!-- id: 24 -->
+    - [x] Implement Ticket Actions (List/Detail) <!-- id: 25 -->
+    - [x] Implement Ticket Detail View <!-- id: 26 -->
+    - [x] Improve Status Timeline Layout <!-- id: 27 -->
+    - [x] Implement Global Search <!-- id: 28 -->
+    - [x] Initialize Git and Push to GitHub <!-- id: 29 -->
+    - [x] Create Root README and Push <!-- id: 30 -->
+    - [x] Create AI Context Guide and Push <!-- id: 31 -->
+    - [x] Refine AI Guide (Rules, Workflow, Skills) <!-- id: 32 -->
+    - [x] Create Korean AI Guide (AI_GUIDE_KR.md) <!-- id: 33 -->
+    - [x] Implement Notifications and User Profile <!-- id: 34 -->
+    - [x] Bundle for Offline Deployment <!-- id: 18 -->
+    - [x] Run and Verify Application <!-- id: 19 -->

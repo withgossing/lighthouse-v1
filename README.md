@@ -61,6 +61,15 @@ lighthouse-v1/
 - **Database**: SQLite (기본), PostgreSQL (호환 가능)
 - **DevOps**: Docker, Github Actions (예정)
 
+## AI Agent Configuration (Portability)
+
+To ensure this project can be continued seamlessly on any machine by an AI agent, the following configuration files are provided in the `.agent/` directory:
+
+- **Rules**: `.agent/rules/rules.md` (Coding conventions, styling, localization)
+- **Workflows**: `.agent/workflows/development.md` (Dev cycle, git flow)
+- **Skills**: `.agent/skills/skills.md` (Required tech stack knowledge)
+- **Memory**: `.agent/memory/` (Contains implementation history and current task status)
+
 ## 라이선스 (License)
 
 This project is licensed under the MIT License.
