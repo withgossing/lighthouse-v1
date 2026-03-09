@@ -1,0 +1,11 @@
+{
+  "/(dashboard)/page": "/",
+  "/(dashboard)/tickets/[id]/page": "/tickets/[id]",
+  "/(dashboard)/tickets/new/page": "/tickets/new",
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/auth/[...nextauth]/route": "/api/auth/[...nextauth]",
+  "/api/auth/mock-login/route": "/api/auth/mock-login",
+  "/favicon.ico/route": "/favicon.ico",
+  "/login/page": "/login"
+}

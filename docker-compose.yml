@@ -1,15 +1,47 @@
-version: '3.8'
 services:
   db:
-    image: postgres:15
+    image: postgres:18
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: lighthouse
     ports:
-      - "5433:5432"
+      - "18011:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_18:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d lighthouse" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/lighthouse?schema=public
+      - PORT=18012
+    ports:
+      - "18012:18012"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    environment:
+      - INTERNAL_API_URL=http://api:18012
+      - NEXT_PUBLIC_API_URL=http://localhost:18012
+      - AUTH_SECRET=my-super-secret-auth-key-for-test-env
+      - NEXTAUTH_URL=http://localhost:18013
+      - PORT=18013
+    ports:
+      - "18013:18013"
+    depends_on:
+      - api
 
 volumes:
-  postgres_data:
+  postgres_data_18:

@@ -1,0 +1,296 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.TicketsService = void 0;
+const common_1 = require("@nestjs/common");
+const prisma_service_1 = require("../prisma.service");
+let TicketsService = class TicketsService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
+    }
+    async getTickets(user, page, limit, status, priority, categoryId) {
+        const skip = (page - 1) * limit;
+        const whereClause = {};
+        if (user.role === 'USER') {
+            whereClause.submitterId = user.id;
+        }
+        if (status)
+            whereClause.status = status;
+        if (priority)
+            whereClause.priority = priority;
+        if (categoryId)
+            whereClause.categoryId = categoryId;
+        const [tickets, totalCount] = await Promise.all([
+            this.prisma.ticket.findMany({
+                where: whereClause,
+                include: {
+                    submitter: { select: { id: true, name: true, department: true } },
+                    assignee: { select: { id: true, name: true } },
+                    category: { select: { id: true, name: true } }
+                },
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.ticket.count({ where: whereClause })
+        ]);
+        return { tickets, pagination: { totalCount, page, limit } };
+    }
+    async createTicket(user, title, description, categoryId, priority, attachmentIds) {
+        if (!title || !description || !categoryId) {
+            throw new common_1.BadRequestException("Missing required fields: title, description, categoryId");
+        }
+        const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
+        if (!category)
+            throw new common_1.BadRequestException("Invalid categoryId");
+        const newTicket = await this.prisma.ticket.create({
+            data: {
+                title,
+                description,
+                categoryId,
+                priority: priority || "MEDIUM",
+                submitterId: user.id,
+                status: "OPEN",
+                historyLogs: {
+                    create: {
+                        action: "CREATED",
+                        changedById: user.id,
+                        note: "Ticket created"
+                    }
+                }
+            },
+            include: {
+                category: { select: { name: true } },
+                submitter: { select: { name: true } }
+            }
+        });
+        if (attachmentIds && Array.isArray(attachmentIds) && attachmentIds.length > 0) {
+            await this.prisma.attachment.updateMany({
+                where: { id: { in: attachmentIds }, uploadedById: user.id },
+                data: { ticketId: newTicket.id }
+            });
+        }
+        return newTicket;
+    }
+    async getTicketById(user, ticketId) {
+        const ticket = await this.prisma.ticket.findUnique({
+            where: { id: ticketId },
+            include: {
+                submitter: { select: { id: true, name: true, department: true } },
+                assignee: { select: { id: true, name: true } },
+                category: { select: { id: true, name: true, parent: { select: { name: true } } } },
+                location: true,
+                comments: {
+                    include: { author: { select: { id: true, name: true, role: true } }, attachments: true },
+                    orderBy: { createdAt: "asc" }
+                },
+                attachments: true,
+                historyLogs: {
+                    include: { changedBy: { select: { id: true, name: true } } },
+                    orderBy: { createdAt: "desc" }
+                }
+            }
+        });
+        if (!ticket)
+            throw new common_1.NotFoundException("Ticket not found");
+        if (user.role === "USER" && ticket.submitterId !== user.id) {
+            throw new common_1.ForbiddenException("Forbidden");
+        }
+        return ticket;
+    }
+    async updateTicket(user, ticketId, status, priority, categoryId, assigneeId, note) {
+        const existingTicket = await this.prisma.ticket.findUnique({
+            where: { id: ticketId },
+            include: { category: true }
+        });
+        if (!existingTicket)
+            throw new common_1.NotFoundException("Ticket not found");
+        if (user.role !== "ADMIN" && (assigneeId || categoryId || priority)) {
+            throw new common_1.ForbiddenException("Forbidden: Admins only");
+        }
+        if (user.role === "USER" && existingTicket.submitterId !== user.id) {
+            throw new common_1.ForbiddenException("Forbidden");
+        }
+        const updates = {};
+        const historyEntries = [];
+        let firstRespondedAt = existingTicket.firstRespondedAt;
+        let resolvedAt = existingTicket.resolvedAt;
+        if (assigneeId !== undefined && assigneeId !== existingTicket.assigneeId) {
+            updates.assigneeId = assigneeId;
+            const action = (existingTicket.assigneeId === null) ? "ASSIGNEE_CHANGED" : "TRANSFERRED";
+            historyEntries.push({
+                action,
+                oldValue: existingTicket.assigneeId || "Unassigned",
+                newValue: assigneeId || "Unassigned",
+                note: note || "Assignee changed",
+                changedById: user.id
+            });
+            if (user.role === "ADMIN" && !firstRespondedAt) {
+                firstRespondedAt = new Date();
+            }
+        }
+        if (status !== undefined && status !== existingTicket.status) {
+            updates.status = status;
+            historyEntries.push({
+                action: "STATUS_CHANGED",
+                oldValue: existingTicket.status,
+                newValue: status,
+                changedById: user.id
+            });
+            if (user.role === "ADMIN" && !firstRespondedAt && status !== "OPEN") {
+                firstRespondedAt = new Date();
+            }
+            if (status === "RESOLVED") {
+                resolvedAt = new Date();
+            }
+            else if (existingTicket.status === "RESOLVED" && status !== "RESOLVED") {
+                resolvedAt = null;
+            }
+        }
+        if (categoryId !== undefined && categoryId !== existingTicket.categoryId) {
+            updates.categoryId = categoryId;
+            historyEntries.push({
+                action: "CATEGORY_CHANGED",
+                oldValue: existingTicket.categoryId,
+                newValue: categoryId,
+                note: note,
+                changedById: user.id
+            });
+        }
+        if (priority !== undefined && priority !== existingTicket.priority) {
+            updates.priority = priority;
+            historyEntries.push({
+                action: "PRIORITY_CHANGED",
+                oldValue: existingTicket.priority,
+                newValue: priority,
+                changedById: user.id
+            });
+        }
+        if (firstRespondedAt !== existingTicket.firstRespondedAt)
+            updates.firstRespondedAt = firstRespondedAt;
+        if (resolvedAt !== existingTicket.resolvedAt)
+            updates.resolvedAt = resolvedAt;
+        if (Object.keys(updates).length === 0) {
+            return existingTicket;
+        }
+        const updatedTicket = await this.prisma.ticket.update({
+            where: { id: ticketId },
+            data: {
+                ...updates,
+                historyLogs: {
+                    create: historyEntries
+                }
+            },
+            include: {
+                assignee: { select: { name: true } },
+                submitter: { select: { name: true } },
+                category: { select: { name: true } },
+                historyLogs: {
+                    orderBy: { createdAt: "desc" },
+                    take: 5
+                }
+            }
+        });
+        const notifications = [];
+        for (const history of historyEntries) {
+            if (history.action === "ASSIGNEE_CHANGED" || history.action === "TRANSFERRED") {
+                if (updates.assigneeId) {
+                    notifications.push({
+                        userId: updates.assigneeId,
+                        title: "새로운 티켓 배정됨",
+                        message: `티켓 #${ticketId}의 담당자로 지정되었습니다.`,
+                        ticketId,
+                        type: "TICKET_ASSIGNED"
+                    });
+                }
+                notifications.push({
+                    userId: existingTicket.submitterId,
+                    title: "담당자 배정",
+                    message: `티켓 #${ticketId} 담당자가 배정/변경되었습니다.`,
+                    ticketId,
+                    type: "TICKET_ASSIGNED"
+                });
+            }
+            if (history.action === "STATUS_CHANGED") {
+                notifications.push({
+                    userId: existingTicket.submitterId,
+                    title: "티켓 상태 변경",
+                    message: `티켓 #${ticketId} 상태가 [${history.newValue}]로 변경되었습니다.`,
+                    ticketId,
+                    type: "TICKET_STATUS_CHANGED"
+                });
+            }
+        }
+        const filteredNotifications = notifications.filter(n => n.userId !== user.id);
+        if (filteredNotifications.length > 0) {
+            await this.prisma.notification.createMany({ data: filteredNotifications });
+        }
+        return updatedTicket;
+    }
+    async addComment(user, ticketId, content, attachmentIds) {
+        if (!content || typeof content !== "string") {
+            if (!attachmentIds || !Array.isArray(attachmentIds) || attachmentIds.length === 0) {
+                throw new common_1.BadRequestException("Comment content or attachment is required");
+            }
+        }
+        const ticket = await this.prisma.ticket.findUnique({
+            where: { id: ticketId },
+            select: { id: true, submitterId: true, assigneeId: true, firstRespondedAt: true }
+        });
+        if (!ticket)
+            throw new common_1.NotFoundException("Ticket not found");
+        if (user.role === "USER" && ticket.submitterId !== user.id) {
+            throw new common_1.ForbiddenException("Forbidden");
+        }
+        const newComment = await this.prisma.comment.create({
+            data: {
+                content: content || "",
+                ticketId,
+                authorId: user.id
+            },
+            include: {
+                author: { select: { id: true, name: true, role: true } }
+            }
+        });
+        const targetUserId = user.role === "USER" ? ticket.assigneeId : ticket.submitterId;
+        if (targetUserId && targetUserId !== user.id) {
+            await this.prisma.notification.create({
+                data: {
+                    userId: targetUserId,
+                    title: "새로운 댓글 추가",
+                    message: `티켓 #${ticketId}에 새 답변이 작성되었습니다.`,
+                    ticketId,
+                    type: "NEW_COMMENT"
+                }
+            });
+        }
+        if (user.role === "ADMIN" && !ticket.firstRespondedAt) {
+            await this.prisma.ticket.update({
+                where: { id: ticketId },
+                data: { firstRespondedAt: new Date() }
+            });
+        }
+        if (attachmentIds && Array.isArray(attachmentIds) && attachmentIds.length > 0) {
+            await this.prisma.attachment.updateMany({
+                where: { id: { in: attachmentIds }, uploadedById: user.id },
+                data: { commentId: newComment.id, ticketId: ticketId }
+            });
+        }
+        return newComment;
+    }
+};
+exports.TicketsService = TicketsService;
+exports.TicketsService = TicketsService = __decorate([
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+], TicketsService);
+//# sourceMappingURL=tickets.service.js.map
