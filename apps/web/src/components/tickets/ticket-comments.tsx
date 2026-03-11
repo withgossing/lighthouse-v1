@@ -29,31 +29,62 @@ export function TicketComments({ ticketId, initialComments }: { ticketId: string
     const [attachments, setAttachments] = useState<AttachedFile[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Use local state for optimistic updates combining initial + optimistic pending
+    const [optimisticComments, setOptimisticComments] = useState<Comment[]>(initialComments);
+
     const handleSubmit = async () => {
-        if (!content.trim()) return;
+        if (!content.trim() && attachments.length === 0) return;
         setIsSubmitting(true);
+
+        const tempContent = content;
+        const tempAttachments = [...attachments];
+
+        // 1. Optimistic Update logic
+        const tempComment: Comment = {
+            id: `temp-${Date.now()}`,
+            content: tempContent,
+            createdAt: new Date(),
+            author: {
+                // In a real app we'd get this from session, mocking it here
+                id: "me",
+                name: "나 (보내는 중...)",
+                role: "USER"
+            },
+            attachments: tempAttachments
+        };
+
+        setOptimisticComments(prev => [...prev, tempComment]);
+        setContent("");
+        setAttachments([]);
 
         try {
             const res = await fetch(`/api/tickets/${ticketId}/comments`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    content,
-                    attachmentIds: attachments.map(a => a.id)
+                    content: tempContent,
+                    attachmentIds: tempAttachments.map(a => a.id)
                 })
             });
 
             const data = await res.json();
             if (res.ok && data.success) {
-                setContent("");
-                setAttachments([]);
                 toast.success("댓글이 등록되었습니다.");
-                router.refresh(); // Refresh Server Component to re-fetch identical data
+                // Let Next.js Server Components refresh and bring down the real ID
+                router.refresh(); 
             } else {
                 toast.error(data.error || "Failed to post comment.");
+                // Rollback optimistic update on failure
+                setOptimisticComments(prev => prev.filter(c => c.id !== tempComment.id));
+                setContent(tempContent);
+                setAttachments(tempAttachments);
             }
         } catch (e) {
             toast.error("Network error while communicating with server.");
+            // Rollback optimistic update on failure
+            setOptimisticComments(prev => prev.filter(c => c.id !== tempComment.id));
+            setContent(tempContent);
+            setAttachments(tempAttachments);
         } finally {
             setIsSubmitting(false);
         }
@@ -67,13 +98,13 @@ export function TicketComments({ ticketId, initialComments }: { ticketId: string
         <div className="flex flex-col h-[500px]">
             <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-6">
-                    {initialComments.length === 0 ? (
+                    {optimisticComments.length === 0 ? (
                         <div className="text-center text-slate-500 py-8 text-sm italic">
                             아직 댓글이 없습니다. 대화를 시작해 보세요!
                         </div>
                     ) : (
-                        initialComments.map((comment) => (
-                            <div key={comment.id} className="flex gap-4">
+                        optimisticComments.map((comment) => (
+                            <div key={comment.id} className={`flex gap-4 ${comment.id.startsWith('temp-') ? 'opacity-60' : ''}`}>
                                 <Avatar className="mt-1">
                                     <AvatarFallback className="bg-primary/10 text-primary">
                                         {getInitials(comment.author.name)}
@@ -135,9 +166,9 @@ export function TicketComments({ ticketId, initialComments }: { ticketId: string
                         maxFiles={5}
                     />
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end mt-4">
                     <Button onClick={handleSubmit} disabled={isSubmitting || (!content.trim() && attachments.length === 0)}>
-                        {isSubmitting ? "등록 중..." : "댓글 등록"}
+                        {isSubmitting ? "전송 중..." : "댓글 등록"}
                     </Button>
                 </div>
             </div>

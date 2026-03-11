@@ -33,7 +33,12 @@ __decorate([
     (0, common_1.Post)(),
     (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
     __param(0, (0, user_decorator_1.CurrentUser)()),
-    __param(1, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.UploadedFile)(new common_1.ParseFilePipe({
+        validators: [
+            new common_1.MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
+            new common_1.FileTypeValidator({ fileType: /^(image\/(jpeg|png|gif|webp))|(application\/(pdf|msword|vnd\.openxmlformats-officedocument\.wordprocessingml\.document))|(text\/plain)$/ }),
+        ],
+    }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)

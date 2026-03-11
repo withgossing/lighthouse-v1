@@ -104,12 +104,12 @@ export declare class TicketsService {
             attachments: {
                 id: string;
                 createdAt: Date;
+                ticketId: string | null;
                 uploadedById: string;
                 fileName: string;
                 fileUrl: string;
                 fileSize: number;
                 mimeType: string;
-                ticketId: string | null;
                 commentId: string | null;
             }[];
             author: {
@@ -128,12 +128,12 @@ export declare class TicketsService {
         attachments: {
             id: string;
             createdAt: Date;
+            ticketId: string | null;
             uploadedById: string;
             fileName: string;
             fileUrl: string;
             fileSize: number;
             mimeType: string;
-            ticketId: string | null;
             commentId: string | null;
         }[];
     } & {

@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CacheModule } from '@nestjs/cache-manager';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma.module';
@@ -9,7 +10,18 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, CategoriesModule, TicketsModule, UploadModule, AnalyticsModule, NotificationsModule],
+  imports: [
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 60000, // default 60 seconds
+    }),
+    PrismaModule, 
+    CategoriesModule, 
+    TicketsModule, 
+    UploadModule, 
+    AnalyticsModule, 
+    NotificationsModule
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -1,4 +1,7 @@
-FROM node:20-alpine
+FROM node:20-slim
+
+# Install OpenSSL for Prisma
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -19,6 +22,9 @@ COPY apps/web ./apps/web
 
 # Generate Prisma Client
 RUN npm run generate -w @lighthouse/db
+
+# Build the DB package
+RUN npm run build -w @lighthouse/db
 
 # Build the Web
 RUN npm run build -w @lighthouse/web

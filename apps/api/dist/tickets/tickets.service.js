@@ -52,6 +52,35 @@ let TicketsService = class TicketsService {
         const category = await this.prisma.category.findUnique({ where: { id: categoryId } });
         if (!category)
             throw new common_1.BadRequestException("Invalid categoryId");
+        let autoAssigneeId = null;
+        const skilledAdmins = await this.prisma.user.findMany({
+            where: {
+                role: 'ADMIN',
+                adminSkills: {
+                    some: { categoryId: categoryId }
+                }
+            },
+            select: { id: true, name: true }
+        });
+        if (skilledAdmins.length > 0) {
+            const workloadCounts = await this.prisma.ticket.groupBy({
+                by: ['assigneeId'],
+                where: {
+                    status: 'IN_PROGRESS',
+                    assigneeId: { in: skilledAdmins.map(a => a.id) }
+                },
+                _count: { id: true }
+            });
+            let minCount = Infinity;
+            for (const admin of skilledAdmins) {
+                const countObj = workloadCounts.find(w => w.assigneeId === admin.id);
+                const count = countObj ? countObj._count.id : 0;
+                if (count < minCount) {
+                    minCount = count;
+                    autoAssigneeId = admin.id;
+                }
+            }
+        }
         const newTicket = await this.prisma.ticket.create({
             data: {
                 title,
@@ -59,7 +88,8 @@ let TicketsService = class TicketsService {
                 categoryId,
                 priority: priority || "MEDIUM",
                 submitterId: user.id,
-                status: "OPEN",
+                assigneeId: autoAssigneeId,
+                status: autoAssigneeId ? "IN_PROGRESS" : "OPEN",
                 historyLogs: {
                     create: {
                         action: "CREATED",
@@ -73,6 +103,27 @@ let TicketsService = class TicketsService {
                 submitter: { select: { name: true } }
             }
         });
+        if (autoAssigneeId) {
+            await this.prisma.ticketHistory.create({
+                data: {
+                    ticketId: newTicket.id,
+                    action: "ASSIGNEE_CHANGED",
+                    oldValue: "Unassigned",
+                    newValue: autoAssigneeId,
+                    note: "Auto-routed based on skill and workload",
+                    changedById: user.id
+                }
+            });
+            await this.prisma.notification.create({
+                data: {
+                    userId: autoAssigneeId,
+                    title: "티켓 자동 배정안내 (Auto-Routing)",
+                    message: `티켓 #${newTicket.id}의 담당자로 자동 지정되었습니다.`,
+                    ticketId: newTicket.id,
+                    type: "TICKET_ASSIGNED"
+                }
+            });
+        }
         if (attachmentIds && Array.isArray(attachmentIds) && attachmentIds.length > 0) {
             await this.prisma.attachment.updateMany({
                 where: { id: { in: attachmentIds }, uploadedById: user.id },

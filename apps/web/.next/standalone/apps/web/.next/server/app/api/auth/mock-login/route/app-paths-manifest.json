@@ -1,0 +1,3 @@
+{
+  "/api/auth/mock-login/route": "app/api/auth/mock-login/route.js"
+}

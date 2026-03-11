@@ -79,12 +79,12 @@ export function TicketDataTable({ tickets, totalCount, page, totalPages }: Ticke
                 <Table>
                     <TableHeader className="bg-slate-50 dark:bg-slate-900">
                         <TableRow>
-                            <TableHead className="w-[100px]">티켓 ID</TableHead>
+                            <TableHead className="w-[100px] hidden sm:table-cell">티켓 ID</TableHead>
                             <TableHead>제목</TableHead>
                             <TableHead className="hidden sm:table-cell">상태</TableHead>
                             <TableHead className="hidden md:table-cell">분류</TableHead>
                             <TableHead className="hidden lg:table-cell">담당자</TableHead>
-                            <TableHead className="text-right">작성일</TableHead>
+                            <TableHead className="hidden sm:table-cell text-right">작성일</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -102,7 +102,7 @@ export function TicketDataTable({ tickets, totalCount, page, totalPages }: Ticke
                                     className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
                                     onClick={() => router.push(`/tickets/${ticket.id}`)}
                                 >
-                                    <TableCell className="font-medium text-xs text-slate-500">
+                                    <TableCell className="hidden sm:table-cell font-medium text-xs text-slate-500">
                                         {ticket.id.slice(0, 8).toUpperCase()}
                                     </TableCell>
                                     <TableCell>
@@ -119,7 +119,7 @@ export function TicketDataTable({ tickets, totalCount, page, totalPages }: Ticke
                                             {ticket.status}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell className="hidden md:table-cell text-sm text-slate-500">
+                                    <TableCell className="hidden md:table-cell text-sm text-slate-500 max-w-[120px] truncate">
                                         {ticket.category?.name || "미분류"}
                                     </TableCell>
                                     <TableCell className="hidden lg:table-cell text-sm">
@@ -131,7 +131,7 @@ export function TicketDataTable({ tickets, totalCount, page, totalPages }: Ticke
                                             </span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right text-sm text-slate-500 whitespace-nowrap">
+                                    <TableCell className="hidden sm:table-cell text-right text-sm text-slate-500 whitespace-nowrap">
                                         <div className="flex items-center justify-end gap-1">
                                             <Clock className="w-3 h-3" />
                                             {formatDistanceToNow(new Date(ticket.createdAt), { addSuffix: true })}

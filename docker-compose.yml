@@ -5,6 +5,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: lighthouse
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "18011:5432"
     volumes:
